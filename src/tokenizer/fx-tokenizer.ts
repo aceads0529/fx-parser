@@ -8,8 +8,8 @@ export class FxType {
 
 export abstract class FxTokenizer {
 
-  public static readonly START = "start";
-  public static readonly ANY = "any";
+  public static readonly START: string = "start";
+  public static readonly ANY: string = "any";
 
   private readonly scopeRules: { [index: string]: FxTokenRule[] };
 
@@ -19,11 +19,12 @@ export abstract class FxTokenizer {
 
   constructor() {
     this.scopeRules = {};
-    this.rule(FxTokenizer.ANY);
+    this.rule(FxTokenizer.START);
+    this.rule(FxTokenizer.ANY, new FxTokenRule(/\s+/, FxType.WHITESPACE));
     this.define();
   }
 
-  public tokenize(input: string) {
+  public tokenize(input: string): FxToken[] {
     this.input = input;
     this.scope = [FxTokenizer.START];
     this.index = 0;
@@ -50,7 +51,7 @@ export abstract class FxTokenizer {
       }
     }
 
-    return tokens;
+    return tokens.filter(t => t.tag != FxType.WHITESPACE);
   }
 
   protected abstract define(): void;

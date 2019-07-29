@@ -9,7 +9,11 @@ export class FxElement extends FxNode {
     this.tag = tag;
   }
 
-  public toString() {
+  public toString(): string {
     return "<" + this.tag + ">";
+  }
+
+  public clone(): FxElement {
+    return new FxElement(this.tag);
   }
 }

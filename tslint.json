@@ -1,5 +1,23 @@
 {
   "rules": {
-    "member-access": true
+    "no-trailing-whitespace": true,
+    "member-access": true,
+    "member-ordering": [
+      true, {
+        "order": [
+          "public-static-field",
+          "instance-field",
+          "constructor",
+          "instance-method",
+          "static-method"
+        ]
+      }
+    ],
+    "typedef": [
+      true,
+      "member-variable-declaration",
+      "call-signature",
+      "parameter"
+    ]
   }
 }

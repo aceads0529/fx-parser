@@ -1,66 +1,65 @@
-import {FxElement} from "./fx-element";
 import {FxNode} from "./fx-node";
 
-export class FxNodeCollection<T extends FxElement = FxElement> implements Iterable<FxNode> {
+export class FxNodeCollection<T extends FxNode = FxNode> implements Iterable<FxNode> {
 
   private readonly owner: FxNode;
-  private readonly _nodes: FxNode[];
+  private readonly _items: T[];
 
   constructor(owner: FxNode) {
     this.owner = owner;
-    this._nodes = [];
+    this._items = [];
   }
 
-  [Symbol.iterator](): Iterator<FxNode> {
-    return this._nodes[Symbol.iterator]();
+  public [Symbol.iterator](): Iterator<T> {
+    return this._items[Symbol.iterator]();
   }
 
-  public push(...nodes: FxNode[]) {
-    nodes = nodes.filter(n => n);
-    for (const node of nodes) {
+  public push(...items: T[]): number {
+    items = items.filter(n => n);
+    for (const node of items) {
       FxNodeCollection.unlink(node);
       this.link(node);
     }
-    return this._nodes.push(...nodes);
+    return this._items.push(...items);
   }
 
-  public unshift(...nodes: FxNode[]) {
-    nodes = nodes.filter(n => n);
-    for (const node of nodes) {
+  public unshift(...items: T[]): number {
+    items = items.filter(n => n);
+    for (const node of items) {
       FxNodeCollection.unlink(node);
       this.link(node);
     }
-    return this._nodes.unshift(...nodes);
+    return this._items.unshift(...items);
   }
 
-  public pop() {
-    const node = this._nodes.pop();
-    FxNodeCollection.unlink(node);
-    return node;
+  public pop(): T {
+    const item = this._items.pop();
+    FxNodeCollection.unlink(item);
+    return item;
   }
 
-  public shift() {
-    const node = this._nodes.shift();
-    FxNodeCollection.unlink(node);
-    return node;
+  public shift(): T {
+    const item = this._items.shift();
+    FxNodeCollection.unlink(item);
+    return item;
   }
 
-  public splice(start: number, count: number, ...nodes: FxNode[]) {
-    const removed = this._nodes.splice(start, count, ...nodes);
+  public splice(start: number, count: number, ...items: T[]): T[] {
+    const removed = this._items.splice(start, count, ...items);
 
     for (const r of removed) {
       FxNodeCollection.unlink(r);
     }
 
-    for (const node of nodes) {
-      FxNodeCollection.unlink(node);
-      this.link(node);
+    for (const item of items) {
+      FxNodeCollection.unlink(item);
+      this.link(item);
     }
 
     return removed;
   }
 
-  public remove(node: FxNode) {
+  public remove(node: T): T {
     const index = this.indexOf(node);
     if (index != -1) {
       return this.splice(index, 1)[0];
@@ -69,36 +68,40 @@ export class FxNodeCollection<T extends FxElement = FxElement> implements Iterab
     }
   }
 
-  public indexOf(node: FxNode) {
-    return this._nodes.indexOf(node);
+  public indexOf(node: T): number {
+    return this._items.indexOf(node);
   }
 
-  public get count() {
-    return this._nodes.length;
+  public get count(): number {
+    return this._items.length;
   }
 
-  public get first() {
-    return this._nodes[0];
+  public get(index: number): T {
+    return this._items[index];
   }
 
-  public get last() {
-    return this._nodes[this._nodes.length - 1];
+  public get first(): T {
+    return this._items[0];
   }
 
-  public map<U>(callback: (value: FxNode, index: number, array: FxNode[]) => U, thisArg?: any) {
-    return this._nodes.map<U>(callback);
+  public get last(): T {
+    return this._items[this._items.length - 1];
   }
 
-  public filter<S extends FxNode>(callback: (value: FxNode, index: number, array: FxNode[]) => value is S, thisArg?: any) {
-    return this._nodes.filter<S>(callback);
+  public map<U>(callback: (value: T, index: number, array: T[]) => U, thisArg?: any): U[] {
+    return this._items.map<U>(callback, thisArg);
   }
 
-  private link(node: FxNode) {
+  public filter(callback: (value: T, index: number, array: T[]) => boolean, thisArg?: any): T[] {
+    return this._items.filter(callback, thisArg);
+  }
+
+  private link(node: FxNode): void {
     node["_parent"] = this.owner;
   }
 
-  private static unlink(node: FxNode) {
-    const children = node && node.parent && node.parent.children._nodes;
+  private static unlink(node: FxNode): void {
+    const children = node && node.parent && node.parent.children._items;
     const index = children ? children.indexOf(node) : -1;
     if (index != -1) {
       children.splice(children.indexOf(node));

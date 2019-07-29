@@ -13,7 +13,7 @@ export class FxToken extends FxElement {
     return `<${this.tag}="${this.symbol}">`;
   }
 
-  public clone() {
+  public clone(): FxToken {
     return new FxToken(this.tag, this.symbol);
   }
 }

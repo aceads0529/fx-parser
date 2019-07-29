@@ -7,8 +7,8 @@ export class FxTokenRule {
 
   private readonly executor: (test: string | RegExp, source: string, index: number) => string | null;
 
-  constructor(test: RegExp | string, callback: FxRuleCallback) {
-    this.callback = callback;
+  constructor(test: RegExp | string, callback: FxRuleCallback | string) {
+    this.callback = typeof callback == "string" ? () => callback : callback;
     if (typeof test == "string") {
       this.test = test;
       this.executor = FxTokenRule.execLiteralTest;
@@ -18,11 +18,11 @@ export class FxTokenRule {
     }
   }
 
-  public exec(source: string, index: number) {
+  public exec(source: string, index: number): string {
     return this.executor(this.test, source, index);
   }
 
-  private static execLiteralTest(test: string, source: string, index: number) {
+  private static execLiteralTest(test: string, source: string, index: number): string {
     for (let i = 0; i < test.length; i++) {
       if (test[i] != source[i + index]) {
         return null;
@@ -31,7 +31,7 @@ export class FxTokenRule {
     return test;
   }
 
-  private static execRegexpTest(test: RegExp, source: string, index: number) {
+  private static execRegexpTest(test: RegExp, source: string, index: number): string {
     test.lastIndex = index;
     const match = test.exec(source);
     if (match) {
@@ -41,7 +41,7 @@ export class FxTokenRule {
     }
   }
 
-  private static normalizeTest(test: RegExp) {
+  private static normalizeTest(test: RegExp): RegExp {
     return new RegExp(test.source, "y");
   }
 }

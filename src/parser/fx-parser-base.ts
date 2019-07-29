@@ -1,19 +1,24 @@
-import {FxParserBase, FxParserRuleItem, FxParserRuleResolver} from "./fx-parser-base";
-import {FxParserRuleBuilder} from "./fx-parser-rule-builder";
-import {FxParserRuleOptions} from "./fx-parser-rule";
 import {FxToken} from "../fx-token";
 import {FxElement} from "../fx-element";
+import {FxParserRule, FxParserRuleOptions} from "./fx-parser-rule";
 
-export abstract class FxParser implements FxParserRuleResolver {
+export interface FxParserRuleItem {
+  rule: FxParserRule,
+  options: Partial<FxParserRuleOptions>
+}
+
+export interface FxParserRuleResolver {
+  getRuleItem(symbol: string): FxParserRuleItem;
+}
+
+export abstract class FxParserBase implements FxParserRuleResolver {
 
   private readonly rules: { [index: string]: FxParserRuleItem };
-  private readonly ruleBuilder: FxParserRuleBuilder;
 
   private tokens: FxToken[];
   private prevPassed: boolean;
 
   constructor() {
-    this.ruleBuilder = new FxParserRuleBuilder();
     this.rules = {};
     this.define();
   }
@@ -32,7 +37,7 @@ export abstract class FxParser implements FxParserRuleResolver {
     const root = new FxElement(key);
     const result = this.rules[key].rule.parse(this.tokens, 0, []);
 
-    if (result.elements) {
+    if (result.success && result.offset == this.tokens.length) {
       root.children.push(...result.elements);
     }
 
@@ -41,10 +46,10 @@ export abstract class FxParser implements FxParserRuleResolver {
 
   protected abstract define(): void;
 
-  protected rule(symbol: string, expr: string, options?: FxParserRuleOptions): void {
+  protected rule(symbol: string, rule: FxParserRule, options?: Partial<FxParserRuleOptions>): void {
     this.rules[symbol] = {
-      rule: this.ruleBuilder.build(expr, this),
-      options: FxParser.mergeWithDefaultOptions(options)
+      rule: rule,
+      options: FxParserBase.mergeWithDefaultOptions(options)
     };
   }
 

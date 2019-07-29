@@ -2,24 +2,24 @@ import {FxNodeCollection} from "./fx-node-collection";
 
 export class FxNode {
 
-  public _parent: FxNode;
-  public readonly children: FxNodeCollection;
+  public _parent: this;
+  public readonly children: FxNodeCollection<this>;
 
   constructor() {
     this.children = new FxNodeCollection(this);
   }
 
-  public get parent() {
+  public get parent(): this {
     return this._parent;
   }
 
-  public orphan() {
+  public orphan(): void {
     if (this._parent) {
       this._parent.children.remove(this);
     }
   }
 
-  public validate() {
+  public validate(): boolean {
     for (const child of this.children) {
       if (child.parent != this || !child.validate()) {
         return false;
@@ -28,7 +28,7 @@ export class FxNode {
     return true;
   }
 
-  public toMultilineString(indent?: number) {
+  public toMultilineString(indent?: number): string {
     if (indent == undefined) {
       indent = 0;
     }

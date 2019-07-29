@@ -1,84 +1,26 @@
-export interface FxParserItem {
-  symbol: string;
-  isTerminal: boolean;
-}
+import {FxElement} from "../fx-element";
 
 export interface FxParserRule {
-
-  hasNext: boolean;
-
-  reset(): void;
-
-  next(prevPassed: boolean): FxParserItem | boolean;
+  parse(elements: FxElement[], index: number, scope: string[]): FxParserRuleResult;
 }
 
-export class FxElementRule implements FxParserRule {
+export class FxParserRuleResult {
 
-  public hasNext: boolean;
+  public readonly success: boolean;
+  public elements: FxElement[];
+  public offset: number;
 
-  private readonly item: FxParserItem;
-
-  constructor(symbol: string, isTerminal?: boolean) {
-    this.item = {
-      symbol: symbol,
-      isTerminal: isTerminal != undefined ? isTerminal : true
-    };
-
-    this.reset();
+  constructor(offset?: number, ...elements: FxElement[]) {
+    this.elements = elements;
+    this.offset = offset || 0;
+    this.success = true;
   }
 
-  public reset() {
-    this.hasNext = true;
-  }
-
-  public next(prevPassed: boolean) {
-    if (this.hasNext) {
-      this.hasNext = false;
-      return this.item;
-    } else {
-      return !prevPassed;
-    }
+  public static fail(): FxParserRuleResult {
+    return {elements: [], offset: 0, success: false};
   }
 }
 
-export class FxLogicalRule implements FxParserRule {
-
-  public hasNext: boolean;
-  private index: number;
-
-  private readonly items: FxParserRule[];
-
-  constructor(...items: FxParserRule[]) {
-    this.items = items;
-    this.reset();
-  }
-
-  public next(prevPassed: boolean) {
-    const next = this.items[this.index].next(prevPassed);
-
-    if (next == true) {
-      return true;
-    } else if (next == false) {
-      this.index++;
-      if (this.index == this.items.length) {
-        return false;
-      } else {
-        return this.items[this.index].next(null);
-      }
-    } else {
-      return next;
-    }
-  }
-
-  public reset(): void {
-    this.index = 0;
-    this.hasNext = true;
-  }
-}
-
-export class FxSequenceRule implements FxParserRule {
-
-  private readonly items: FxParserItem[];
-
-  constructor(items)
+export interface FxParserRuleOptions {
+  isPrivate: boolean;
 }
