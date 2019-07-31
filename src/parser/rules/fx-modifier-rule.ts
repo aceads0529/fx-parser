@@ -3,17 +3,18 @@ import {FxElement} from "../../fx-element";
 
 type FxModifier = "*" | "?" | "+";
 
-export class FxModifierRule implements FxParserRule {
+export class FxModifierRule extends FxParserRule {
 
   public modifier: FxModifier;
   public rule: FxParserRule;
 
   constructor(modifier: FxModifier, rule: FxParserRule) {
+    super();
     this.modifier = modifier;
     this.rule = rule;
   }
 
-  public parse(elements: FxElement[], index: number, scope:string[]): FxParserRuleResult {
+  public parse(elements: FxElement[], index: number, scope: string[]): FxParserRuleResult {
     const result = new FxParserRuleResult();
     let keepParsing: boolean;
 
@@ -39,5 +40,9 @@ export class FxModifierRule implements FxParserRule {
       case "+":
         return result.offset > 0 ? result : FxParserRuleResult.fail();
     }
+  }
+
+  protected propagateId(): void {
+    this.rule.id = this.id;
   }
 }

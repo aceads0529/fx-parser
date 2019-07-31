@@ -1,11 +1,12 @@
 import {FxParserRule, FxParserRuleResult} from "../fx-parser-rule";
 import {FxElement} from "../../fx-element";
 
-export class FxTerminalRule implements FxParserRule {
+export class FxTerminalRule extends FxParserRule {
 
   public symbol: string;
 
   constructor(symbol: string) {
+    super();
     this.symbol = symbol;
   }
 

@@ -32,22 +32,24 @@ export abstract class FxTokenizer {
     const tokens: FxToken[] = [];
 
     while (this.index < this.input.length) {
-      const rules = this.scopeRules[this.scope[0]].concat(this.scopeRules[FxTokenizer.ANY]);
-      if (rules) {
-        let matchFound = false;
-        for (const rule of rules) {
-          const match = rule.exec(this.input, this.index);
-          if (match) {
-            tokens.push(new FxToken(rule.callback(match, this.scope[0]), match));
-            this.index += match.length;
-            matchFound = true;
-            break;
-          }
+      const currentScope = this.scope[0];
+
+      const rules = (this.scopeRules[currentScope] || []).concat(this.scopeRules[FxTokenizer.ANY]);
+      let matchFound = false;
+
+      for (const rule of rules) {
+        const match = rule.exec(this.input, this.index);
+        if (match) {
+          tokens.push(new FxToken(rule.callback(match, this.scope[0]), match));
+          this.index += match.length;
+          matchFound = true;
+          break;
         }
-        if (!matchFound) {
-          tokens.push(new FxToken(FxType.BAD_CHARACTER, this.input[this.index]));
-          this.index++;
-        }
+      }
+
+      if (!matchFound) {
+        tokens.push(new FxToken(FxType.BAD_CHARACTER, this.input[this.index]));
+        this.index++;
       }
     }
 

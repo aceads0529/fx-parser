@@ -34,14 +34,12 @@ export class FxBnfParser extends FxParserBase {
       new FxTerminalRule("group-close")
     ));
 
+    // {term} (logical {term})+
     this.rule("logical", new FxSequenceRule(
       new FxElementRule("term", this),
       new FxModifierRule("+", new FxSequenceRule(
         new FxTerminalRule("logical"),
-        new FxLogicalRule(
-          new FxElementRule("term", this),
-          new FxElementRule("logical", this)
-        )
+        new FxElementRule("term", this)
       ))
     ));
   }

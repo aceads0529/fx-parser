@@ -12,41 +12,56 @@ import {FxLogicalRule} from "./rules/fx-logical-rule";
 
 export class FxParserRuleBuilder {
 
-  private resolver: FxParserRuleResolver;
-
+  private readonly resolver: FxParserRuleResolver;
   private readonly tokenizer: FxBnfTokenizer;
   private readonly parser: FxBnfParser;
 
-  constructor() {
+  private symbol: string;
+
+  constructor(resolver: FxParserRuleResolver) {
+    this.resolver = resolver;
     this.tokenizer = new FxBnfTokenizer();
     this.parser = new FxBnfParser();
   }
 
-  public build(input: string, resolver: FxParserRuleResolver): FxParserRule {
-    this.resolver = resolver;
+  public build(symbol: string, expr: string): FxParserRule {
+    this.symbol = symbol;
 
-    const tokens = this.tokenizer.tokenize(input);
+    const tokens = this.tokenizer.tokenize(expr);
     const root = this.parser.parse(tokens);
+
     return this.parse(root);
   }
 
   private parse(root: FxElement): FxParserRule {
+    let rule: FxParserRule = null;
+
     switch (root.tag) {
       case "root":
-        return this.parse(root.children.first);
+        rule = this.parse(root.children.first);
+        break;
       case "sequence":
-        return this.parseSequence(root);
+        rule = this.parseSequence(root);
+        break;
       case "logical":
-        return this.parseLogical(root);
+        rule = this.parseLogical(root);
+        break;
       case "group":
-        return this.parseGroup(root);
+        rule = this.parseGroup(root);
+        break;
       case "term":
-        return this.parseTerm(root);
+        rule = this.parseTerm(root);
+        break;
       case "identifier":
-        return this.parseTerminal(root);
+        rule = this.parseTerminal(root);
+        break;
       case "element":
-        return this.parseElement(root);
+        rule = this.parseElement(root);
+        break;
     }
+
+    if (rule) { rule.id = this.symbol; }
+    return rule;
   }
 
   private parseSequence(root: FxElement): FxParserRule {

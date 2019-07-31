@@ -1,26 +1,25 @@
-import {FxParserRuleBuilder} from "./parser/fx-parser-rule-builder";
 import {FxParser} from "./parser/fx-parser";
-import {FxToken} from "./fx-token";
 import {FxTokenizer} from "./tokenizer/fx-tokenizer";
 import {FxTokenRule} from "./tokenizer/fx-token-rule";
 import {FxElement} from "./fx-element";
 
+const remove = [
+  "group-open", "group-close",
+  "brace-open", "brace-close",
+  "brack-open", "brack-close",
+  "dynamic-open", "dynamic-close",
+  "comma", "colon", "assign"
+];
+
 class JsonFxTokenizer extends FxTokenizer {
 
   protected define(): void {
-    this.rule("string-literal",
-      new FxTokenRule(/[^']+/, "literal-text"),
-      new FxTokenRule("'", () => {
-        this.pop();
-        return "literal";
-      })
-    );
-
     this.rule("object-literal-key",
       new FxTokenRule("{", () => {
         this.push("dynamic-key");
-        return "dynamic-open";
+        return "brace-open";
       }),
+      new FxTokenRule("()", "return-key"),
       new FxTokenRule(":", () => {
         this.begin("object-literal-value");
         return "assign";
@@ -30,7 +29,7 @@ class JsonFxTokenizer extends FxTokenizer {
     this.rule("dynamic-key",
       new FxTokenRule("}", () => {
         this.pop();
-        return "dynamic-close";
+        return "brace-close";
       })
     );
 
@@ -38,6 +37,10 @@ class JsonFxTokenizer extends FxTokenizer {
       new FxTokenRule(",", () => {
         this.begin("object-literal-key");
         return "comma";
+      }),
+      new FxTokenRule("{", () => {
+        this.push("object-literal-value");
+        return "brace-open";
       }),
       new FxTokenRule("}", () => {
         this.pop();
@@ -47,20 +50,23 @@ class JsonFxTokenizer extends FxTokenizer {
 
     this.rule(FxTokenizer.ANY,
       new FxTokenRule(/[a-zA-Z_~][a-zA-Z0-9_~]*/, "identifier"),
-      new FxTokenRule(/[0-9]\.?[0-9]*/, "number"),
+      new FxTokenRule(/[0-9]+\.?[0-9]*/, "number"),
       new FxTokenRule(/\$[a-zA-Z0-9_~]*/, "variable"),
-      new FxTokenRule(/@[a-zA-Z0-9_~]/, "template"),
-      new FxTokenRule(/[+\-*/]+/, "operator"),
+      new FxTokenRule(/@[a-zA-Z0-9_~]*/, "template"),
+      new FxTokenRule(/[+\-*/]+|=>/, "operator"),
       new FxTokenRule(":", "colon"),
       new FxTokenRule(",", "comma"),
       new FxTokenRule("(", "group-open"),
       new FxTokenRule(")", "group-close"),
-      new FxTokenRule("[", "brack-open"),
-      new FxTokenRule("]", "brack-close"),
-      new FxTokenRule("'", () => {
-        this.push("string-literal");
-        return "literal"
+      new FxTokenRule("[", () => {
+        this.push("array");
+        return "brack-open";
       }),
+      new FxTokenRule("]", () => {
+        this.pop();
+        return "brack-close";
+      }),
+      new FxTokenRule(/'[^']*'/, "literal"),
       new FxTokenRule("{", () => {
         this.push("object-literal-key");
         return "brace-open";
@@ -73,46 +79,55 @@ class JsonFxTokenizer extends FxTokenizer {
 class JsonFxParser extends FxParser {
 
   protected define(): void {
-    this.rule("root", "{term-group}");
-    this.rule("term", "{group}|{object}|{array}|{literal}|{call}|identifier|number|variable|template", {isPrivate: true});
-    this.rule("term-group", "{invoke}|{operation}|{term}", {isPrivate: true});
+    this.rule("root", "{expr}");
 
-    this.rule("literal", "literal literal-text literal");
+    this.rule("array", "brack-open ({expr} (comma {expr})*)? brack-close");
 
     this.rule("object", "brace-open ({object-prop} (comma {object-prop})*)? brace-close");
-    this.rule("object-prop", "{dynamic-key}|identifier|variable|template assign {term-group}");
+    this.rule("object-prop", "{dynamic-key}|{template-decl}|return-key|identifier|variable assign {expr}");
+    this.rule("dynamic-key", "brace-open {expr} brace-close");
+    this.rule("template-decl", "template group-open (variable (comma variable)*)? group-close");
 
-    this.rule("dynamic-key", "dynamic-open {term-group} dynamic-close");
+    this.rule("expr", "{operation}|{term}", {isPrivate: true});
+    this.rule("operation", "{term} (operator {term})+");
 
-    this.rule("group", "group-open ({term-group} (comma {term-group})*)? group-close");
-    this.rule("array", "brack-open ({term-group} (comma {term-group})*)? brack-close");
-    this.rule("operation", "{term} operator {operation}|{term}");
-    this.rule("invoke", "{term} colon {call}|identifier|template");
-    this.rule("call", "identifier|template {group}");
+    this.rule("invoke", "{term} colon {call}");
+    this.rule("group", "group-open ({expr} (comma {expr})*)? group-close");
+    this.rule("call", "template|identifier group-open ({expr} (comma {expr})*)? group-close");
+
+    this.rule("indexer", "{term} brack-open ({expr} (comma {expr})*)? brack-close");
+    this.rule("object-indexer", "{term} brace-open ({expr} (comma {expr})*)? brace-close");
+
+    this.rule("term", "{object-indexer}|{indexer}|{object}|{array}|{invoke}|{group}|{call}|identifier|number|variable|template|literal", {isPrivate: true});
   }
 }
 
-const remove = [
-  "group-open", "group-close",
-  "brace-open", "brace-close",
-  "brack-open", "brack-close",
-  "dynamic-open", "dynamic-close",
-  "comma", "colon", "assign"
-];
+/*
 
-function optimize(tree: FxElement): void {
-  for (const child of tree.children) {
-    optimize(child);
-  }
-
-  for (const child of tree.children) {
-    if (remove.indexOf(child.tag) != -1) {
-      tree.children.remove(child);
-    }
-  }
+{
+  @email($first, $last, $domain): lowercase($first[0] + $last) + '@' + $domain,
+  @user($u): {
+    $names: $u.name:split(' '),
+    firstName: $names[0],
+    lastName: $names[1]
+  },
+  (): $:map(@user):map($ => @email($.firstName, $.lastName, 'gmail.com'))
 }
 
-const expression = "{ { a:add(b) }: 10, c: [10, d:add(10)] }";
+ */
+
+const expression = "a(1 + 2) + 3";
+
+// const expression =
+//         "{\n" +
+//         "  @email($first, $last, $domain): lowercase($first[0] + $last) + '@' + $domain,\n" +
+//         "  @user($u): {\n" +
+//         "    $names: $u.name:split(' '),\n" +
+//         "    firstName: $names[0],\n" +
+//         "    lastName: $names[1]\n" +
+//         "  },\n" +
+//         "  (): $:map(@user):map($ => @email($.firstName, $.lastName, 'gmail.com'))\n" +
+//         "}";
 
 const tokenizer = new JsonFxTokenizer();
 const parser = new JsonFxParser();
@@ -124,3 +139,23 @@ const tree = parser.parse(tokens);
 optimize(tree);
 
 console.log(tree.toMultilineString());
+
+function optimize(tree: FxElement): void {
+  for (const child of tree.children) {
+    optimize(child);
+  }
+
+  if (tree.tag == "operation" && tree.parent && tree.parent.tag == "operation") {
+    const i = tree.parent.children.indexOf(tree);
+    tree.parent.children.splice(i, 0, ...tree.children);
+    tree.parent.children.remove(tree);
+  } else {
+    const children = tree.children.concat();
+
+    for (const child of children) {
+      if (remove.indexOf(child.tag) != -1) {
+        tree.children.remove(child);
+      }
+    }
+  }
+}

@@ -1,7 +1,21 @@
 import {FxElement} from "../fx-element";
 
-export interface FxParserRule {
-  parse(elements: FxElement[], index: number, scope: string[]): FxParserRuleResult;
+export abstract class FxParserRule {
+
+  private _id: string;
+
+  public get id(): string {
+    return this._id;
+  }
+
+  public set id(id: string) {
+    this._id = id;
+    this.propagateId();
+  }
+
+  public abstract parse(elements: FxElement[], index: number, scope: string[]): FxParserRuleResult;
+
+  protected propagateId(): void {}
 }
 
 export class FxParserRuleResult {

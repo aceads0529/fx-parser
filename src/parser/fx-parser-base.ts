@@ -51,6 +51,7 @@ export abstract class FxParserBase implements FxParserRuleResolver {
       rule: rule,
       options: FxParserBase.mergeWithDefaultOptions(options)
     };
+    rule.id = symbol;
   }
 
   public getRuleItem(symbol: string): FxParserRuleItem {

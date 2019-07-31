@@ -1,6 +1,6 @@
 import {FxNode} from "./fx-node";
 
-export class FxNodeCollection<T extends FxNode = FxNode> implements Iterable<FxNode> {
+export class FxNodeCollection<T extends FxNode = FxNode> implements Iterable<T> {
 
   private readonly owner: FxNode;
   private readonly _items: T[];
@@ -12,6 +12,10 @@ export class FxNodeCollection<T extends FxNode = FxNode> implements Iterable<FxN
 
   public [Symbol.iterator](): Iterator<T> {
     return this._items[Symbol.iterator]();
+  }
+
+  public concat(...items: ConcatArray<T>[]): T[] {
+    return this._items.concat(...items);
   }
 
   public push(...items: T[]): number {

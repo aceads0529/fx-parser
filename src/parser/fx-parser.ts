@@ -13,7 +13,7 @@ export abstract class FxParser implements FxParserRuleResolver {
   private prevPassed: boolean;
 
   constructor() {
-    this.ruleBuilder = new FxParserRuleBuilder();
+    this.ruleBuilder = new FxParserRuleBuilder(this);
     this.rules = {};
     this.define();
   }
@@ -43,7 +43,7 @@ export abstract class FxParser implements FxParserRuleResolver {
 
   protected rule(symbol: string, expr: string, options?: FxParserRuleOptions): void {
     this.rules[symbol] = {
-      rule: this.ruleBuilder.build(expr, this),
+      rule: this.ruleBuilder.build(symbol, expr),
       options: FxParser.mergeWithDefaultOptions(options)
     };
   }
